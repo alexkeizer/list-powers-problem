@@ -66,6 +66,9 @@ theorem Stream'.even_eq_mul_two (σ : Stream' α) :
   
 #eval List.range 3
 
+/-- Sanity check -/
+example : (nat.even.sumPreceding).take 10 = (powers 2).take 10 := by rfl
+
 example : nat.even.sumPreceding = powers 2 := by
   funext i
   simp[sumPreceding, nat, powers, pow_two, even_eq_mul_two, List.foldl_map]
