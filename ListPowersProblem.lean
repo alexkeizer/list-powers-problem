@@ -58,27 +58,28 @@ theorem procedure_two_eq_squares :
 
 
 
-def dropSum : Nat → Stream' Nat → Stream' Nat 
+def sumDrop : Nat → Stream' Nat → Stream' Nat 
   | 0, σ | 1, σ  => σ
-  | n+1, σ => dropSum n (σ.dropEveryNth (n+1) |>.sum)
+  | n+1, σ => sumDrop n (σ.dropEveryNth (n+1) |>.sum)
 
 @[simp]
-theorem dropSum_one : dropSum 1 σ = σ := rfl
+theorem sumDrop_one : sumDrop 1 σ = σ := rfl
 
 @[simp]
-theorem dropSum_two : dropSum 2 nat = powers 2 := by
-  simp only [dropSum]; rw [procedure_two_eq_squares]
+theorem sumDrop_two : sumDrop 2 nat = powers 2 := by
+  simp only [sumDrop]; rw [procedure_two_eq_squares]
 
 /--
   This pattern also works for cubes!
 -/
 example : 
     let bound := 2 --  20
-    (dropSum 3 nat |>.take bound) = (powers 3 |>.take bound) := by 
+    (sumDrop 3 nat |>.take bound) = (powers 3 |>.take bound) := by 
   native_decide
 
 
-theorem dropSum_three : dropSum 3 nat = powers 3 := by 
+theorem sumDrop_three : sumDrop 3 nat = powers 3 := by 
   funext i
-  simp [dropSum, nat]
+  simp [sumDrop, nat]
+  rw [dropEveryNth_two_eq_mul_two]
   sorry
