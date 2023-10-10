@@ -4,6 +4,9 @@ import Mathlib.Tactic.LibrarySearch
 import Mathlib.Tactic.Find
 import Mathlib.Tactic.Ring
 
+import ListPowersProblem.StreamLemmas
+
+open Stream'
 
 /-- The infinite sequence of all naturals: `1`, `2`, ... -/
 def nat : Stream' Nat :=
@@ -16,69 +19,66 @@ def nat : Stream' Nat :=
 def powers (e : Nat) : Stream' Nat := 
   fun i => (i + 1)^e
 
+/-!
+  We observe that if we start with the stream of all positive naturals
+    ` 1   2   3   4   5   ⋯`
+  Then drop every second element    (`Stream'.dropEveryNth 2`)
+    ` 1       3       5   ⋯`
+  And sum this sequence             (`Stream'.sum`)
+    ` 1       4       9   ⋯`
+  That we obtain the sequence of squares
+-/
+
 /-- 
-  Given a sequence of naturals `σ : Stream' Nat`,
-  `σ.sumPreceding` is the sequence whose `i`-th element is the sum of the elements at indices 
-  `0`, `1`, ..., `i`
- -/
-def Stream'.sumPreceding (σ : Stream' Nat) : Stream' Nat :=
-  fun i => 
-    List.range (i+1)
-      |>.map (σ ·)
-      |>.foldl (· + ·) 0
+  Sanity check: we can compute both sequences up to a finite bound, and check that these 
+  computations indeed agree.
+  We use `native_decide` to get fast computation, allowing for a higher bound in less time
+-/
+example : 
+    let bound := 5 -- 100
+    (nat.dropEveryNth 2 |>.sum |>.take bound) = (powers 2 |>.take bound) := by 
+  native_decide
 
-open Stream'
-
-#check iterate
-#check Nat.iterate
-
-theorem Stream'.iterate_eq_Nat_iterate :
-    iterate f a i = f^[i] a := by
+/--
+  Now the real deal:
+  We prove that the sequence obtained by this procedure is indeed the sequence of squares
+-/
+theorem procedure_two_eq_squares :
+    (nat.dropEveryNth 2 |>.sum) = powers 2 := by
+  funext i
+  simp [dropEveryNth_two_eq_mul_two, nat, powers]
   induction' i with i ih
   · rfl
-  · unfold iterate Nat.iterate
-    rw [ih, Function.Commute.iterate_self]
-
-theorem Stream'.iterate_stream (σ : Stream' α) (f : Nat → Nat) :
-    iterate (fun s i => s (f i)) σ i j = σ (f^[i] j) := by
-  rw [iterate_eq_Nat_iterate]
-  induction' i with i ih generalizing σ 
-  · rfl
-  · simp [ih]; congr; exact (Function.iterate_succ_apply' f i j).symm
+  · simp only [sum_succ, ih]
+    -- The goal here is
+    --  `⊢ (i + 1) ^ 2 + ((i + 1) * 2 + 1) = (Nat.succ i + 1) ^ 2`
+    -- This is true, but I can't be bothered to find the right theorem
+    sorry
 
 
--- #find (fun x => x + ?y)^[?i] 0 = ?y * ?i
 
--- #find Nat.succ ?n = ?n + 1
 
-theorem Nat.iterate_add_eq_mul (x) :
-    (· + x)^[y] z = (x * y) + z := by
-  induction' y with y ih generalizing z
-  · simp only [zero_eq, Function.iterate_zero, id_eq, mul_zero, zero_add]
-  · simp only [Function.iterate_succ, Function.comp_apply, ih, ←Nat.add_one]; ring_nf
+def dropSum : Nat → Stream' Nat → Stream' Nat 
+  | 0, σ | 1, σ  => σ
+  | n+1, σ => dropSum n (σ.dropEveryNth (n+1) |>.sum)
 
-theorem Stream'.even_eq_mul_two (σ : Stream' α) :
-    σ.even = fun i => σ (i * 2) := by
+@[simp]
+theorem dropSum_one : dropSum 1 σ = σ := rfl
+
+@[simp]
+theorem dropSum_two : dropSum 2 nat = powers 2 := by
+  simp only [dropSum]; rw [procedure_two_eq_squares]
+
+/--
+  This pattern also works for cubes!
+-/
+example : 
+    let bound := 2 --  20
+    (dropSum 3 nat |>.take bound) = (powers 3 |>.take bound) := by 
+  native_decide
+
+
+theorem dropSum_three : dropSum 3 nat = powers 3 := by 
   funext i
-  simp [even, corec, map, head, nth, tail, iterate_stream, Nat.iterate_add_eq_mul 2]
-  rw [Nat.mul_comm]
-  
-  
-#eval List.range 3
-
-/-- Sanity check -/
-example : (nat.even.sumPreceding).take 10 = (powers 2).take 10 := by rfl
-
-example : nat.even.sumPreceding = powers 2 := by
-  funext i
-  simp[sumPreceding, nat, powers, pow_two, even_eq_mul_two, List.foldl_map]
-  induction' i with i ih
-  · rfl
-  · simp []
-
-#eval nat.take 100
-#eval (powers 2).take 100
-#eval nat.odd.sumPreceding.take 100
-#eval nat.even.sumPreceding.take 100
-
-def hello := "world"
+  simp [dropSum, nat]
+  sorry
