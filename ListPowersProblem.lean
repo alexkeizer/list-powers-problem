@@ -49,11 +49,8 @@ theorem procedure_two_eq_squares :
   simp [dropEveryNth_two_eq_mul_two, nat, powers]
   induction' i with i ih
   · rfl
-  · simp only [sum_succ, ih]
-    -- The goal here is
-    --  `⊢ (i + 1) ^ 2 + ((i + 1) * 2 + 1) = (Nat.succ i + 1) ^ 2`
-    -- This is true, but I can't be bothered to find the right theorem
-    sorry
+  · simp only [sum_succ, ih, pow_two, (show Nat.succ i = i + 1 from rfl)]
+    ring
 
 
 
