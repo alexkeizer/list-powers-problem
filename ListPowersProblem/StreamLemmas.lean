@@ -7,6 +7,25 @@ namespace Stream'
 
 variable {σ : Stream' α}
 
+
+/-!
+  ## Iterate
+-/
+
+theorem iterate_eq_Nat_iterate :
+  iterate f a i = f^[i] a := by
+induction' i with i ih
+· rfl
+· unfold iterate Nat.iterate
+  rw [ih, Function.Commute.iterate_self]
+
+theorem iterate_stream_eq_index_iterate (σ : Stream' α) (f : Nat → Nat) :
+    iterate (fun s i => s (f i)) σ i j = σ (f^[i] j) := by
+  rw [iterate_eq_Nat_iterate]
+  induction' i with i ih generalizing σ 
+  · rfl
+  · simp [ih]; congr; exact (Function.iterate_succ_apply' f i j).symm
+
 /-! 
   ## sum
 -/
@@ -34,44 +53,34 @@ theorem sum_succ (σ : Stream' Nat) (i : Nat) :
     σ.sum (i + 1) = σ.sum i + σ (i + 1) := by
   simp [sum, take_succ_to_concat, Nat.add_assoc]
 
--- theorem sum_eq_corec (σ : Stream' Nat) :
---     σ.sum = corec Prod.fst (fun (acc, σ) => (
---       acc + head σ,
---       tail σ 
---     )) (head σ, tail σ) := by
---   funext i
---   simp only [corec, map, nth]
---   induction' i with i ih
---   · rfl
---   · simp only [sum_succ, iterate, ← ih, add_right_inj]
---     simp only [head, tail, nth]
---     clear ih
---     induction' i with i ih
---     · rfl
---     · simp only [iterate, zero_add]
---       rw [←ih]
-    
-    
-
-
-
-/-!
-  ## Iterate
--/
-
-theorem iterate_eq_Nat_iterate :
-  iterate f a i = f^[i] a := by
-induction' i with i ih
-· rfl
-· unfold iterate Nat.iterate
-  rw [ih, Function.Commute.iterate_self]
-
-theorem iterate_stream_eq_index_iterate (σ : Stream' α) (f : Nat → Nat) :
-    iterate (fun s i => s (f i)) σ i j = σ (f^[i] j) := by
-  rw [iterate_eq_Nat_iterate]
-  induction' i with i ih generalizing σ 
+theorem sum_eq_corec (σ : Stream' Nat) :
+    σ.sum = corec Prod.fst (fun (acc, σ) => (
+      acc + head σ,
+      tail σ 
+    )) (head σ, tail σ) := by
+  funext i
+  simp only [corec, map, nth]
+  induction' i with i ih
   · rfl
-  · simp [ih]; congr; exact (Function.iterate_succ_apply' f i j).symm
+  · simp only [sum_succ, iterate, ← ih, add_right_inj]
+    simp only [iterate_eq_Nat_iterate, head, nth]
+    clear ih
+    have (g : ℕ × Stream' ℕ → ℕ) (y) : 
+        Prod.snd ((fun x => (g x, tail x.snd))^[i] (y, tail σ))
+        = ((fun x => tail x)^[i] (tail σ)) := by
+      induction i generalizing y σ <;> simp [*]
+    rw [this]; clear this
+    simp [tail, nth]
+    suffices ∀ k,
+        σ (i + k) = (fun x i => x (i + 1))^[i] (fun i => σ (i + k)) 0
+      from this 1
+    intro k
+    induction' i with i ih generalizing k
+    · rfl 
+    · simp [Nat.add_assoc, ←ih (1+k)]
+      show σ (i + 1 + k) = _
+      congr 1
+      ring_nf
 
 
 /-!
