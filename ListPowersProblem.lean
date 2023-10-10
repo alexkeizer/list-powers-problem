@@ -60,7 +60,7 @@ theorem procedure_two_eq_squares :
 
 def sumDrop : Nat → Stream' Nat → Stream' Nat 
   | 0, σ | 1, σ  => σ
-  | n+1, σ => sumDrop n (σ.dropEveryNth (n+1) |>.sum)
+  | n+1, σ => sumDrop n <| sum <| σ.dropEveryNth (n+1)
 
 @[simp]
 theorem sumDrop_one : sumDrop 1 σ = σ := rfl
