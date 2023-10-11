@@ -20,6 +20,7 @@ induction' i with i ih
 · unfold iterate Nat.iterate
   rw [ih, Function.Commute.iterate_self]
 
+@[simp]
 theorem iterate_stream_eq_index_iterate (σ : Stream' α) (f : Nat → Nat) :
     iterate (fun s i => s (f i)) σ i j = σ (f^[i] j) := by
   rw [iterate_eq_Nat_iterate]
@@ -110,6 +111,18 @@ theorem sum_eq_corec (σ : Stream' Nat) :
       show σ (i + 1 + k) = _
       congr 1
       ring_nf
+
+theorem sum_dropEveryNth (σ) :
+    sum (dropEveryNth n σ) = dropEveryNth n (sum (σ - maskEveryNth n σ)) := by
+  simp [dropEveryNth, sum_eq_corec, corec', (· ∘ ·)]
+  have :
+      (match (σ, n - 2) with
+        | (σ, 0) => (head σ, tail (tail σ), n - 2)
+        | (σ, Nat.succ m) => (head σ, tail σ, m)).fst 
+      = head σ := by
+    rcases n with ⟨⟩|⟨⟩|⟨⟩|_ <;> rfl
+  -- cases this
+  sorry
 
 theorem sum_corec {f : α → Nat} {g : α → α} :
     sum (corec f g x) = corec Prod.fst (fun (acc, x) => (acc + f x, g x)) (f x, g x) := by
