@@ -2,6 +2,7 @@ import ListPowersProblem.Stream
 import Mathlib.Data.Nat.Basic
 import Mathlib.Logic.Function.Iterate
 import Mathlib.Tactic.Ring
+import Mathlib.Tactic.LibrarySearch
 
 namespace Stream' 
 
@@ -25,6 +26,34 @@ theorem iterate_stream_eq_index_iterate (σ : Stream' α) (f : Nat → Nat) :
   induction' i with i ih generalizing σ 
   · rfl
   · simp [ih]; congr; exact (Function.iterate_succ_apply' f i j).symm
+
+
+/-!
+  ## Corec
+-/
+
+/-- Prove stream equality by providing a bisimulation relation `R` -/
+theorem corec_bisim {f : α → β} {g : α → α} {f' : α' → β} {g' : α' → α'}
+    (R : α → α' → Prop) 
+    (hf : ∀ a a', R a a' → f a = f' a') 
+    (hg : ∀ a a', R a a' → R (g a) (g' a')) :
+    ∀ {a a'}, R a a' → corec f g a = corec f' g' a' := by
+  intro a a' hR
+  funext i
+  simp [corec, map, nth]
+  apply hf
+  induction' i with i ih
+  · exact hR
+  · exact hg _ _ ih
+
+@[simp]
+theorem head_corec : head (corec f g x) = f x := rfl
+
+@[simp]
+theorem tail_corec :
+    tail (corec f g x) = corec f g (g x) := by
+  simp [tail, nth, corec, map, iterate_eq_Nat_iterate]
+
 
 /-! 
   ## sum
@@ -82,24 +111,13 @@ theorem sum_eq_corec (σ : Stream' Nat) :
       congr 1
       ring_nf
 
-
-/-!
-  ## Corec
--/
-
-/-- Prove stream equality by providing a bisimulation relation `R` -/
-theorem corec_bisim {f : α → β} {g : α → α} {f' : α' → β} {g' : α' → α'}
-    (R : α → α' → Prop) 
-    (hf : ∀ a a', R a a' → f a = f' a') 
-    (hg : ∀ a a', R a a' → R (g a) (g' a')) :
-    ∀ {a a'}, R a a' → corec f g a = corec f' g' a' := by
-  intro a a' hR
-  funext i
-  simp [corec, map, nth]
-  apply hf
-  induction' i with i ih
-  · exact hR
-  · exact hg _ _ ih
+theorem sum_corec {f : α → Nat} {g : α → α} :
+    sum (corec f g x) = corec Prod.fst (fun (acc, x) => (acc + f x, g x)) (f x, g x) := by
+  simp only [sum_eq_corec, head_corec, tail_corec]
+  apply corec_bisim (fun (acc₁, σ) (acc₂, x) => acc₁ = acc₂ ∧ σ = corec f g x)
+  · rintro ⟨acc, _⟩ ⟨_, x⟩ ⟨⟨⟩, ⟨⟩⟩; rfl
+  · rintro ⟨acc, _⟩ ⟨_, x⟩ ⟨⟨⟩, ⟨⟩⟩; simp only [head_corec, tail_corec, and_self]
+  · exact ⟨rfl, rfl⟩
 
 /-!
   ## Even

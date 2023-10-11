@@ -77,6 +77,28 @@ example :
 
 theorem sumDrop_three : sumDrop 3 nat = powers 3 := by 
   funext i
-  simp [sumDrop, nat]
-  rw [dropEveryNth_two_eq_mul_two]
-  sorry
+  simp only [sumDrop, dropEveryNth, le_refl, tsub_eq_zero_of_le, ge_iff_le, add_tsub_cancel_left, 
+    nat, powers, pow_three]
+  -- simp only [sumDrop, nat, powers, pow_three]
+  induction' i with i ih
+  · rfl
+  · simp [ih, (show Nat.succ i = i + 1 from rfl)]
+    suffices
+      corec'
+        (fun x =>
+          match x with
+          | (σ, 0) => (head σ, tail (tail σ), 0)
+          | (σ, Nat.succ m) => (head σ, tail σ, m))
+        (sum
+            (corec'
+              (fun x =>
+                match x with
+                | (σ, 0) => (head σ, tail (tail σ), 1)
+                | (σ, Nat.succ m) => (head σ, tail σ, m))
+              (fun x => x + 1, 1)),
+          0)
+        (i + 1)
+      = 1
+    by rw[this]
+    ring_nf
+    
