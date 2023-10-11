@@ -19,12 +19,41 @@ induction' i with i ih
 · unfold iterate Nat.iterate
   rw [ih, Function.Commute.iterate_self]
 
+@[simp]
 theorem iterate_stream_eq_index_iterate (σ : Stream' α) (f : Nat → Nat) :
     iterate (fun s i => s (f i)) σ i j = σ (f^[i] j) := by
   rw [iterate_eq_Nat_iterate]
   induction' i with i ih generalizing σ 
   · rfl
   · simp [ih]; congr; exact (Function.iterate_succ_apply' f i j).symm
+
+/-!
+  ## Corec
+-/
+
+/-- Prove stream equality by providing a bisimulation relation `R` -/
+theorem corec_bisim {f : α → β} {g : α → α} {f' : α' → β} {g' : α' → α'}
+    (R : α → α' → Prop) 
+    (hf : ∀ a a', R a a' → f a = f' a') 
+    (hg : ∀ a a', R a a' → R (g a) (g' a')) :
+    ∀ {a a'}, R a a' → corec f g a = corec f' g' a' := by
+  intro a a' hR
+  funext i
+  simp [corec, map, nth]
+  apply hf
+  induction' i with i ih
+  · exact hR
+  · exact hg _ _ ih
+
+@[simp]
+theorem head_corec : head (corec f g x) = f x := rfl
+
+@[simp]
+theorem tail_corec : tail (corec f g x) = corec f g (g x) := by
+  simp only [tail, nth, corec, map, iterate_eq_Nat_iterate, Function.iterate_succ, 
+    Function.comp_apply]   
+
+
 
 /-! 
   ## sum
@@ -82,24 +111,18 @@ theorem sum_eq_corec (σ : Stream' Nat) :
       congr 1
       ring_nf
 
+theorem sum_dropEveryNth (σ) :
+    sum (dropEveryNth n σ) = dropEveryNth n (sum (σ - maskEveryNth n σ)) := by
+  simp [dropEveryNth, sum_eq_corec, corec', (· ∘ ·)]
+  have :
+      (match (σ, n - 2) with
+        | (σ, 0) => (head σ, tail (tail σ), n - 2)
+        | (σ, Nat.succ m) => (head σ, tail σ, m)).fst 
+      = head σ := by
+    rcases n with ⟨⟩|⟨⟩|⟨⟩|_ <;> rfl
+  -- cases this
+  sorry
 
-/-!
-  ## Corec
--/
-
-/-- Prove stream equality by providing a bisimulation relation `R` -/
-theorem corec_bisim {f : α → β} {g : α → α} {f' : α' → β} {g' : α' → α'}
-    (R : α → α' → Prop) 
-    (hf : ∀ a a', R a a' → f a = f' a') 
-    (hg : ∀ a a', R a a' → R (g a) (g' a')) :
-    ∀ {a a'}, R a a' → corec f g a = corec f' g' a' := by
-  intro a a' hR
-  funext i
-  simp [corec, map, nth]
-  apply hf
-  induction' i with i ih
-  · exact hR
-  · exact hg _ _ ih
 
 /-!
   ## Even
