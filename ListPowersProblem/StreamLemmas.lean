@@ -33,6 +33,24 @@ theorem iterate_stream_eq_index_iterate (σ : Stream' α) (f : Nat → Nat) :
   ## Corec
 -/
 
+@[simp]
+theorem corec_zero :
+    corec f g x 0 = f x := 
+  rfl
+
+@[simp]
+theorem corec_succ :
+    corec f g x (i + 1) = corec f g (g x) i := by
+  simp only [corec, map, nth, iterate_eq_Nat_iterate, Function.iterate_succ, Function.comp_apply]
+
+@[simp]
+theorem head_corec : head (corec f g x) = f x := rfl
+
+@[simp]
+theorem tail_corec :
+    tail (corec f g x) = corec f g (g x) := by
+  simp only [tail, nth, corec_succ]
+
 /-- Prove stream equality by providing a bisimulation relation `R` -/
 theorem corec_bisim {f : α → β} {g : α → α} {f' : α' → β} {g' : α' → α'}
     (R : α → α' → Prop) 
@@ -47,13 +65,29 @@ theorem corec_bisim {f : α → β} {g : α → α} {f' : α' → β} {g' : α' 
   · exact hR
   · exact hg _ _ ih
 
-@[simp]
-theorem head_corec : head (corec f g x) = f x := rfl
+theorem fun_to_corec (σ : Stream' α) :
+    σ = corec σ (· + 1) 0 := by
+  funext i
+  suffices ∀ j,
+    σ (i+j) = corec σ _ j i
+  from this 0
+  intro j
+  induction' i with i ih generalizing j
+  · simp only [Nat.zero_eq, zero_add, corec_zero]
+  · specialize ih (j+1)
+    rw [←Nat.add_assoc] at ih
+    simp only [Nat.succ_add, ih, corec_succ]
+
+
+
+/-!
+  ## Append
+-/
 
 @[simp]
-theorem tail_corec :
-    tail (corec f g x) = corec f g (g x) := by
-  simp [tail, nth, corec, map, iterate_eq_Nat_iterate]
+theorem nil_append (σ : Stream' α) : 
+    ([] : List α) ++ σ = σ := 
+  rfl
 
 
 /-! 
@@ -165,5 +199,23 @@ theorem dropEveryNth_two_eq_even :
 theorem dropEveryNth_two_eq_mul_two (σ : Stream' α) :
     σ.dropEveryNth 2 = fun i => σ (i * 2) := by
   rw [dropEveryNth_two_eq_even, even_eq_mul_two]
+
+
+
+/-!
+  ## Subtraction
+-/
+
+@[simp]
+theorem corec_sub_corec {f₁ : α₁ → β} {f₂ : α₂ → β} {x₁ : α₁} {x₂ : α₂} [Sub β] :
+    corec f₁ g₁ x₁ - corec f₂ g₂ x₂ 
+    = corec (fun x => f₁ x.fst - f₂ x.snd) (Prod.map g₁ g₂) (x₁, x₂) := by
+  simp only [(· - ·), Sub.sub]
+  funext i
+  induction' i with i ih generalizing x₁ x₂
+  · rfl
+  · simp [corec_succ, ih]
+  
+
 
 end Stream'
