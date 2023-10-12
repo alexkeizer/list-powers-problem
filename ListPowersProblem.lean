@@ -202,20 +202,47 @@ theorem dropEveryNth_eq_fun :
 #eval take 20 (sum (fun i => i + i / 2 + 1))
 
 
-#eval take 20 (fun j => sum (fun i => i + i / 2 + 1) (j+j+1))
-#eval take 20 (fun j => 3 * (j+1)^2)
-lemma sum_eq_three_odd : 
-    sum (fun i => i + i/2 + 1) (j+j+1) = 3 * (j+1)^2 := by
-  simp [pow_two]
-  sorry
+-- #eval take 20 (fun j => sum (fun i => i + i / 2 + 1) (j+j+1))
+-- #eval take 20 (fun j => 3 * (j+1)^2)
+-- lemma sum_eq_three_odd : 
+--     sum (fun i => i + i/2 + 1) (j+j+1) = 3 * (j+1)^2 := by
+--   simp [pow_two]
+--   sorry
+
+theorem Nat.mul_div {a b : Nat} (hb : 0 < b) : 
+    a * b / b = a := by
+  have hb' : b ≠ 0 := by 
+    rintro ⟨⟩; contradiction
+  induction a generalizing b
+  <;> simp [Nat.succ_mul, Nat.add_div hb, hb', *]
 
 #eval take 20 (fun j => sum (fun i => i + i / 2 + 1) (j+j))
-#eval take 20 (fun j => 3 * j^2 + (3*j +1 ))
 #eval take 20 (fun j => 3 * (j^2 + j) + 1)
 lemma sum_eq_three_even : 
     sum (fun i => i + i/2 + 1) (j+j) = 3 * (j^2 + j) + 1 := by
   simp [pow_two]
-  sorry
+  induction' j with j ih
+  · rfl
+  · have hlt : 0 < 2 := by decide
+    simp only [
+      Nat.add_succ, add_zero, Nat.succ_add, sum_succ, ih, Nat.mul_succ, Nat.succ.injEq
+    ]
+    have h1 : Nat.succ j = j + 1 := rfl
+    have h2 : Nat.succ (j + j) = j + j + 1 := rfl
+    have h3 : Nat.succ (j + j + 1) = j + j + 2 := rfl
+    rw [h1, h2, h3]
+    ring_nf
+    rw [Nat.add_div hlt, Nat.mul_div hlt]
+    simp [
+      show 1 / 2 = 0 from rfl,
+      show ∀ x, Nat.succ x = x + 1 from fun _ => rfl
+    ]
+    ring
+
+#eval take 20     (fun i => i + i / 3 + 1)
+#eval take 20 (sum fun i => i + i / 3 + 1)
+#eval take 20 (fun j => sum (fun i => i + i / 3 + 1) (j+j))
+#eval take 20 (fun j => j * ((4/3)*j + 1) + (j+j) )
 
 -- lemma sum_eq_three : 
 --     sum (fun i => i + i/2 + 1) 
@@ -233,4 +260,13 @@ theorem sumDrop_three : sumDrop 3 pnats = powers 3 := by
   induction' i with i ih
   · rfl
   · simp [ih, show Nat.succ i = i + 1 from rfl]; ring
+
+-- theorem sumDrop_four : sumDrop 4 pnats = powers 4 := by 
+--   funext i
+--   simp only [sumDrop, powers, pow_succ, pow_zero, mul_one, 
+--     dropEveryNth_eq_fun, pnats, Nat.div_one
+--   ]
+--   induction' i with i ih
+--   · rfl
+--   · simp [ih, show Nat.succ i = i + 1 from rfl]; ring
     
