@@ -9,13 +9,9 @@ import ListPowersProblem.StreamLemmas
 
 open Stream'
 
-/-- The infinite sequence of all naturals: `1`, `2`, ... -/
-def pnats : Stream' Nat :=
-  (· + 1)
-
 /-- 
-  The infinite sequence of each natural number to the `e`-th power: 
-  `0ᵉ`, `1ᵉ`, `2ᵉ`, ...
+  The infinite sequence of each positive natural number to some constant `e`-th power: 
+    `1ᵉ`, `2ᵉ`, ...
 -/
 def powers (e : Nat) : Stream' Nat := 
   fun i => (i + 1)^e
@@ -239,9 +235,35 @@ lemma sum_eq_three_even :
     ]
     ring
 
+#eval take 20 <| sum nats
+#eval take 20 <| fun i => (i^2) / 2
+
+lemma sum_nats : sum nats = fun i => i^2 / 2 := by
+  simp [nats, pow_two]
+  funext i
+  induction' i with i ih
+  · rfl
+  · simp only [sum_succ, ih, Nat.add_succ, add_zero, Nat.succ_mul, Nat.mul_succ, Nat.succ_div, 
+      Nat.isUnit_iff]
+    show _ + 1 = _
+    have not_two_le : ¬2 ≤ i ^ 2 % 2 := by
+      cases Nat.mod_two_eq_zero_or_one (i^2) <;> simp [*]
+    have h_dvd :
+        2 ∣ i ^ 2 + i * 2 + 1 := by
+      apply Nat.dvd_of_mod_eq_zero
+      simp only [Nat.add_mod, Nat.mul_mod_left, add_zero, Nat.mod_mod, Nat.one_mod]
+      rw [Nat.mod_mod (i^2) 2, show 1 % 2 = 1 from rfl]
+    simp [Nat.add_assoc (i^2) i i, ←mul_two i, ←pow_two, Nat.add_div (a := i^2) (b:=i*2), not_two_le]
+    by_cases hdvd : 2 ∣ i * i
+    · sorry 
+    · sorry
+
+
+#eval take 20 (sum fun i => i            )
+#eval take 20 (fun i => (i / 3) * 4      )
 #eval take 20     (fun i => i + i / 3 + 1)
 #eval take 20 (sum fun i => i + i / 3 + 1)
-#eval take 20 (fun j => sum (fun i => i + i / 3 + 1) (j+j))
+#eval take 20 (fun j => sum (fun i => i + i / 3 + 1) (j+(j/2)))
 #eval take 20 (fun j => j * ((4/3)*j + 1) + (j+j) )
 
 -- lemma sum_eq_three : 
@@ -250,6 +272,10 @@ lemma sum_eq_three_even :
 --       if j % 2 = 0 then
 --          := by
 --   sorry
+
+lemma sum_n [NeZero n] : 
+    sum (fun i => i + i/(n+1) + 1) (j+(j/n)) = 3 * (j^2 + j) + 1 := by
+  sorry
 
 theorem sumDrop_three : sumDrop 3 pnats = powers 3 := by 
   funext i
@@ -261,12 +287,21 @@ theorem sumDrop_three : sumDrop 3 pnats = powers 3 := by
   · rfl
   · simp [ih, show Nat.succ i = i + 1 from rfl]; ring
 
--- theorem sumDrop_four : sumDrop 4 pnats = powers 4 := by 
---   funext i
---   simp only [sumDrop, powers, pow_succ, pow_zero, mul_one, 
---     dropEveryNth_eq_fun, pnats, Nat.div_one
---   ]
---   induction' i with i ih
---   · rfl
---   · simp [ih, show Nat.succ i = i + 1 from rfl]; ring
+theorem sumDrop_four : sumDrop 4 pnats = powers 4 := by 
+  funext i
+  simp only [sumDrop, powers, pow_succ, pow_zero, mul_one, 
+    dropEveryNth_eq_fun, pnats, Nat.div_one
+  ]
+  induction' i with i ih
+  · rfl
+  · sorry
+
+theorem sumDrop_five : sumDrop 5 pnats = powers 5 := by 
+  funext i
+  simp only [sumDrop, powers, pow_succ, pow_zero, mul_one, 
+    dropEveryNth_eq_fun, pnats, Nat.div_one
+  ]
+  induction' i with i ih
+  · rfl
+  · sorry
     
