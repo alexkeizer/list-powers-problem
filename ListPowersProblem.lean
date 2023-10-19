@@ -238,7 +238,7 @@ lemma sum_eq_three_even :
 #eval take 20 <| sum nats
 #eval take 20 <| fun i => (i^2) / 2
 
-lemma sum_nats : sum nats = fun i => i^2 / 2 := by
+lemma sum_nats : sum nats = fun i => i * (i+1) / 2 := by
   simp [nats, pow_two]
   funext i
   induction' i with i ih
@@ -246,18 +246,27 @@ lemma sum_nats : sum nats = fun i => i^2 / 2 := by
   · simp only [sum_succ, ih, Nat.add_succ, add_zero, Nat.succ_mul, Nat.mul_succ, Nat.succ_div, 
       Nat.isUnit_iff]
     show _ + 1 = _
-    have not_two_le : ¬2 ≤ i ^ 2 % 2 := by
-      cases Nat.mod_two_eq_zero_or_one (i^2) <;> simp [*]
-    have h_dvd :
-        2 ∣ i ^ 2 + i * 2 + 1 := by
-      apply Nat.dvd_of_mod_eq_zero
-      simp only [Nat.add_mod, Nat.mul_mod_left, add_zero, Nat.mod_mod, Nat.one_mod]
-      rw [Nat.mod_mod (i^2) 2, show 1 % 2 = 1 from rfl]
-    simp [Nat.add_assoc (i^2) i i, ←mul_two i, ←pow_two, Nat.add_div (a := i^2) (b:=i*2), not_two_le]
-    by_cases hdvd : 2 ∣ i * i
-    · sorry 
-    · sorry
+    have not_two_le : ¬2 ≤ (i * i + i) % 2 := by
+      cases Nat.mod_two_eq_zero_or_one (i * i + i) <;> simp [*]
+    simp [
+      Nat.add_assoc (i*i+i) i i, 
+      Nat.add_div (a := i*i+i), 
+      ←mul_two i,
+      Nat.mul_div,
+      not_two_le,
+      Nat.add_assoc ((i * i + i) / 2 + i),
+      Nat.dvd_iff_mod_eq_zero
+    ]
+    have : (Nat.succ (Nat.succ (i * i + i + i * 2))) % 2 
+          = (Nat.succ ((Nat.succ (i * i + i + i * 2) % 2))) % 2 := by
+      show (_ + 1) % 2 = _
+      rw [Nat.add_mod]
+      rfl
+    rw [this]
+    cases' Nat.mod_two_eq_zero_or_one (Nat.succ (i * i + i + i * 2)) with h h
+      <;> simp [h]
 
+      
 
 #eval take 20 (sum fun i => i            )
 #eval take 20 (fun i => (i / 3) * 4      )
